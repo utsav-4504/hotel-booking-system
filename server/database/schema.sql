@@ -2,8 +2,10 @@
 -- Hotel Booking Platform Database Schema
 -- ============================================
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -21,7 +23,7 @@ CREATE TABLE users (
 );
 
 -- Hotels Table
-CREATE TABLE hotels (
+CREATE TABLE IF NOT EXISTS hotels (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE,
@@ -47,7 +49,7 @@ CREATE TABLE hotels (
 );
 
 -- Hotel Amenities Junction Table
-CREATE TABLE hotel_amenities (
+CREATE TABLE IF NOT EXISTS hotel_amenities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hotel_id UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
   amenity VARCHAR(100) NOT NULL,
@@ -55,7 +57,7 @@ CREATE TABLE hotel_amenities (
 );
 
 -- Hotel Gallery
-CREATE TABLE hotel_galleries (
+CREATE TABLE IF NOT EXISTS hotel_galleries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hotel_id UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
   image_url VARCHAR(500) NOT NULL,
@@ -66,7 +68,7 @@ CREATE TABLE hotel_galleries (
 );
 
 -- Rooms Table
-CREATE TABLE rooms (
+CREATE TABLE IF NOT EXISTS rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hotel_id UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -86,7 +88,7 @@ CREATE TABLE rooms (
 );
 
 -- Room Amenities
-CREATE TABLE room_amenities (
+CREATE TABLE IF NOT EXISTS room_amenities (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
   amenity VARCHAR(100) NOT NULL,
@@ -94,7 +96,7 @@ CREATE TABLE room_amenities (
 );
 
 -- Bookings Table
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_number VARCHAR(50) UNIQUE NOT NULL,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -118,7 +120,7 @@ CREATE TABLE bookings (
 );
 
 -- Guest Information (Additional guests in booking)
-CREATE TABLE booking_guests (
+CREATE TABLE IF NOT EXISTS booking_guests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   first_name VARCHAR(100) NOT NULL,
@@ -130,7 +132,7 @@ CREATE TABLE booking_guests (
 );
 
 -- Reviews Table
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   hotel_id UUID NOT NULL REFERENCES hotels(id),
@@ -145,7 +147,7 @@ CREATE TABLE reviews (
 );
 
 -- Payments Table
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
   amount DECIMAL(10, 2) NOT NULL,
@@ -159,7 +161,7 @@ CREATE TABLE payments (
 );
 
 -- Coupons Table
-CREATE TABLE coupons (
+CREATE TABLE IF NOT EXISTS coupons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) UNIQUE NOT NULL,
   description TEXT,
@@ -175,7 +177,7 @@ CREATE TABLE coupons (
 );
 
 -- User Wishlist
-CREATE TABLE wishlists (
+CREATE TABLE IF NOT EXISTS wishlists (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   hotel_id UUID NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
@@ -184,7 +186,7 @@ CREATE TABLE wishlists (
 );
 
 -- Notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type VARCHAR(50) NOT NULL,
@@ -196,7 +198,7 @@ CREATE TABLE notifications (
 );
 
 -- Activity Logs
-CREATE TABLE activity_logs (
+CREATE TABLE IF NOT EXISTS activity_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action VARCHAR(100) NOT NULL,
@@ -212,22 +214,22 @@ CREATE TABLE activity_logs (
 -- Indexes for Performance
 -- ============================================
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_hotels_city ON hotels(city);
-CREATE INDEX idx_hotels_country ON hotels(country);
-CREATE INDEX idx_hotels_featured ON hotels(featured);
-CREATE INDEX idx_rooms_hotel_id ON rooms(hotel_id);
-CREATE INDEX idx_bookings_user_id ON bookings(user_id);
-CREATE INDEX idx_bookings_hotel_id ON bookings(hotel_id);
-CREATE INDEX idx_bookings_room_id ON bookings(room_id);
-CREATE INDEX idx_bookings_status ON bookings(status);
-CREATE INDEX idx_bookings_check_in ON bookings(check_in_date);
-CREATE INDEX idx_reviews_hotel_id ON reviews(hotel_id);
-CREATE INDEX idx_reviews_user_id ON reviews(user_id);
-CREATE INDEX idx_wishlists_user_id ON wishlists(user_id);
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_activity_logs_user_id ON activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_hotels_city ON hotels(city);
+CREATE INDEX IF NOT EXISTS idx_hotels_country ON hotels(country);
+CREATE INDEX IF NOT EXISTS idx_hotels_featured ON hotels(featured);
+CREATE INDEX IF NOT EXISTS idx_rooms_hotel_id ON rooms(hotel_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_hotel_id ON bookings(hotel_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_room_id ON bookings(room_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_check_in ON bookings(check_in_date);
+CREATE INDEX IF NOT EXISTS idx_reviews_hotel_id ON reviews(hotel_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlists_user_id ON wishlists(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id);
 
 -- ============================================
 -- Functions for Updated Timestamps
@@ -242,20 +244,26 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_hotels_updated_at ON hotels;
 CREATE TRIGGER update_hotels_updated_at BEFORE UPDATE ON hotels
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_rooms_updated_at ON rooms;
 CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON rooms
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
 CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

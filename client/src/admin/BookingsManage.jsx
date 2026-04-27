@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FaSearch,
   FaCheckCircle,
@@ -7,43 +7,25 @@ import {
   FaEye,
   FaTrash
 } from "react-icons/fa";
+import { deleteBooking, getAllBookings, updateBookingStatus } from "../services/bookingService";
 
 function BookingsManage() {
   const [search, setSearch] = useState("");
+  const [bookings, setBookings] = useState([]);
+  const loadBookings = async () => {
+    const response = await getAllBookings({ limit: 100 });
+    setBookings(response.bookings || []);
+  };
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
-  const bookings = [
-    {
-      id: "BK1204",
-      guest: "Rahul Shah",
-      hotel: "Ocean Pearl Resort",
-      dates: "20 Apr - 22 Apr",
-      total: "$388",
-      status: "Confirmed"
-    },
-    {
-      id: "BK1205",
-      guest: "Priya Patel",
-      hotel: "Skyline Grand Hotel",
-      dates: "05 May - 08 May",
-      total: "$620",
-      status: "Pending"
-    },
-    {
-      id: "BK1206",
-      guest: "Aman Verma",
-      hotel: "Royal Palace Stay",
-      dates: "12 Mar - 14 Mar",
-      total: "$210",
-      status: "Cancelled"
-    }
-  ];
-
-  const filtered = bookings.filter(
+  const filtered = useMemo(() => bookings.filter(
     (item) =>
-      item.id.toLowerCase().includes(search.toLowerCase()) ||
-      item.guest.toLowerCase().includes(search.toLowerCase()) ||
-      item.hotel.toLowerCase().includes(search.toLowerCase())
-  );
+      item.bookingNumber.toLowerCase().includes(search.toLowerCase()) ||
+      item.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      item.hotel?.name?.toLowerCase().includes(search.toLowerCase())
+  ), [bookings, search]);
 
   const statusUI = {
     Confirmed: {
@@ -112,41 +94,54 @@ function BookingsManage() {
                     className="border-b border-slate-100 hover:bg-slate-50"
                   >
                     <td className="px-6 py-5 font-semibold text-slate-900">
-                      {item.id}
+                      {item.bookingNumber}
                     </td>
 
                     <td className="px-6 py-5 text-slate-700">
-                      {item.guest}
+                      {item.user?.name}
                     </td>
 
                     <td className="px-6 py-5 text-slate-700">
-                      {item.hotel}
+                      {item.hotel?.name}
                     </td>
 
                     <td className="px-6 py-5 text-slate-600">
-                      {item.dates}
+                      {item.checkInDate} - {item.checkOutDate}
                     </td>
 
                     <td className="px-6 py-5 font-semibold text-slate-900">
-                      {item.total}
+                      ${item.totalAmount}
                     </td>
 
                     <td className="px-6 py-5">
                       <span
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusUI[item.status].className}`}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusUI[item.statusLabel]?.className || "bg-slate-100 text-slate-700"}`}
                       >
-                        {statusUI[item.status].icon}
-                        {item.status}
+                        {statusUI[item.statusLabel]?.icon}
+                        {item.statusLabel}
                       </span>
                     </td>
 
                     <td className="px-6 py-5">
                       <div className="flex gap-3">
-                        <button className="w-10 h-10 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition flex items-center justify-center">
+                        <button
+                          onClick={async () => {
+                            const nextStatus = item.status === "pending" ? "confirmed" : "completed";
+                            await updateBookingStatus(item.id, { status: nextStatus });
+                            loadBookings();
+                          }}
+                          className="w-10 h-10 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition flex items-center justify-center"
+                        >
                           <FaEye />
                         </button>
 
-                        <button className="w-10 h-10 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition flex items-center justify-center">
+                        <button
+                          onClick={async () => {
+                            await deleteBooking(item.id);
+                            loadBookings();
+                          }}
+                          className="w-10 h-10 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+                        >
                           <FaTrash />
                         </button>
                       </div>

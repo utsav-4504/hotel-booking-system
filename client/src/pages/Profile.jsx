@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaUserCircle,
   FaEnvelope,
@@ -8,23 +8,58 @@ import {
   FaEdit,
   FaShieldAlt
 } from "react-icons/fa";
+import useAuth from "../hooks/useAuth";
+import { getMyBookings } from "../services/bookingService";
 
 function Profile() {
-  const user = {
-    name: "Utsav Prajapati",
-    email: "utsav@example.com",
-    phone: "+91 9876543210",
-    location: "Ahmedabad, India",
-    joined: "January 2026",
-    bookings: 8,
-    status: "Premium Member"
-  };
+  const { user, updateProfile, changePassword } = useAuth();
+  const [profileForm, setProfileForm] = useState({
+    fullName: "",
+    email: "",
+    phone: ""
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [stats, setStats] = useState([
+    { title: "Total Bookings", value: "0" },
+    { title: "Upcoming Trips", value: "0" },
+    { title: "Cancelled Trips", value: "0" }
+  ]);
+  const [message, setMessage] = useState("");
 
-  const stats = [
-    { title: "Total Bookings", value: "08" },
-    { title: "Upcoming Trips", value: "02" },
-    { title: "Saved Hotels", value: "14" }
-  ];
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        fullName: user.fullName || user.name || "",
+        email: user.email || "",
+        phone: user.phone || ""
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const response = await getMyBookings();
+        const bookings = response.bookings || [];
+        setStats([
+          { title: "Total Bookings", value: String(bookings.length) },
+          {
+            title: "Upcoming Trips",
+            value: String(bookings.filter((item) => item.status !== "cancelled").length)
+          },
+          {
+            title: "Cancelled Trips",
+            value: String(bookings.filter((item) => item.status === "cancelled").length)
+          }
+        ]);
+      } catch (error) {}
+    };
+    loadStats();
+  }, []);
 
   return (
     <section className="bg-slate-50 min-h-screen py-16">
@@ -53,38 +88,30 @@ function Profile() {
               </div>
 
               <h2 className="text-2xl font-bold text-slate-900 mt-5">
-                {user.name}
+                {user?.name}
               </h2>
 
-              <p className="text-slate-500 mt-2">{user.status}</p>
+              <p className="text-slate-500 mt-2">{user?.role}</p>
             </div>
 
             <div className="mt-8 space-y-5 text-slate-600">
               <div className="flex items-center gap-3">
                 <FaEnvelope className="text-yellow-500" />
-                <span>{user.email}</span>
+                <span>{user?.email}</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <FaPhone className="text-yellow-500" />
-                <span>{user.phone}</span>
+                <span>{user?.phone || "-"}</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <FaMapMarkerAlt className="text-yellow-500" />
-                <span>{user.location}</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <FaCalendarCheck className="text-yellow-500" />
-                <span>Joined {user.joined}</span>
+                <span>Role: {user?.role}</span>
               </div>
             </div>
 
-            <button className="w-full mt-8 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2">
-              <FaEdit />
-              Edit Profile
-            </button>
+            {message && <p className="mt-5 text-sm text-green-600">{message}</p>}
           </div>
 
           {/* Right Content */}
@@ -119,7 +146,8 @@ function Profile() {
 
                   <input
                     type="text"
-                    defaultValue={user.name}
+                    value={profileForm.fullName}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, fullName: e.target.value }))}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                   />
                 </div>
@@ -131,7 +159,8 @@ function Profile() {
 
                   <input
                     type="email"
-                    defaultValue={user.email}
+                    value={profileForm.email}
+                    disabled
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                   />
                 </div>
@@ -143,25 +172,25 @@ function Profile() {
 
                   <input
                     type="text"
-                    defaultValue={user.phone}
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-slate-500 mb-2">
-                    Location
-                  </label>
-
-                  <input
-                    type="text"
-                    defaultValue={user.location}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
-                  />
+                  <label className="block text-sm text-slate-500 mb-2">Role</label>
+                  <input type="text" value={user?.role || ""} disabled className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" />
                 </div>
               </div>
 
-              <button className="mt-6 px-6 py-3 rounded-xl bg-yellow-500 text-slate-900 font-semibold hover:bg-yellow-400 transition">
+              <button
+                onClick={async () => {
+                  await updateProfile({ fullName: profileForm.fullName, phone: profileForm.phone });
+                  setMessage("Profile updated successfully");
+                }}
+                className="mt-6 px-6 py-3 rounded-xl bg-yellow-500 text-slate-900 font-semibold hover:bg-yellow-400 transition"
+              >
                 Save Changes
               </button>
             </div>
@@ -180,17 +209,35 @@ function Profile() {
                 <input
                   type="password"
                   placeholder="New Password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                 />
 
                 <input
                   type="password"
-                  placeholder="Confirm Password"
+                  placeholder="Current Password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                 />
               </div>
 
-              <button className="mt-6 px-6 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition">
+              <button
+                onClick={async () => {
+                  await changePassword({
+                    currentPassword: passwordForm.currentPassword,
+                    newPassword: passwordForm.newPassword
+                  });
+                  setPasswordForm({
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmPassword: ""
+                  });
+                  setMessage("Password updated successfully");
+                }}
+                className="mt-6 px-6 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
+              >
                 Update Password
               </button>
             </div>

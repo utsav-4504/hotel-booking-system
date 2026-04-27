@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaMapMarkerAlt,
@@ -8,49 +8,25 @@ import {
   FaClock,
   FaTimesCircle
 } from "react-icons/fa";
+import { cancelBooking, getMyBookings } from "../services/bookingService";
 
 function MyBookings() {
-  const bookings = [
-    {
-      id: "BK1024",
-      hotel: "Ocean Pearl Resort",
-      city: "Goa, India",
-      image:
-        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200",
-      room: "Deluxe Ocean View Room",
-      checkIn: "20 Apr 2026",
-      checkOut: "22 Apr 2026",
-      guests: 2,
-      total: 388.8,
-      status: "Confirmed"
-    },
-    {
-      id: "BK1057",
-      hotel: "Skyline Grand Hotel",
-      city: "Dubai, UAE",
-      image:
-        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1200",
-      room: "Executive Suite",
-      checkIn: "05 May 2026",
-      checkOut: "08 May 2026",
-      guests: 3,
-      total: 740,
-      status: "Pending"
-    },
-    {
-      id: "BK0991",
-      hotel: "Royal Palace Stay",
-      city: "Udaipur, India",
-      image:
-        "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200",
-      room: "Royal King Room",
-      checkIn: "12 Mar 2026",
-      checkOut: "14 Mar 2026",
-      guests: 2,
-      total: 310,
-      status: "Cancelled"
+  const [bookings, setBookings] = useState([]);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const loadBookings = async () => {
+    try {
+      setErrorMsg("");
+      const response = await getMyBookings();
+      setBookings(response.bookings || []);
+    } catch (error) {
+      setErrorMsg(error || "Failed to load bookings");
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
   const statusUI = {
     Confirmed: {
@@ -85,6 +61,11 @@ function MyBookings() {
           </p>
         </div>
 
+        {errorMsg && (
+          <div className="mb-6 bg-red-100 text-red-700 px-4 py-3 rounded-xl">
+            {errorMsg}
+          </div>
+        )}
         {/* Cards */}
         <div className="space-y-8">
           {bookings.map((booking) => (
@@ -96,8 +77,8 @@ function MyBookings() {
                 {/* Image */}
                 <div className="lg:col-span-1">
                   <img
-                    src={booking.image}
-                    alt={booking.hotel}
+                    src={booking.hotel?.image || booking.hotel?.imageUrl}
+                    alt={booking.hotel?.name}
                     className="w-full h-full min-h-65 object-cover"
                   />
                 </div>
@@ -108,26 +89,26 @@ function MyBookings() {
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-2xl font-bold text-slate-900">
-                          {booking.hotel}
+                          {booking.hotel?.name}
                         </h2>
 
                         <span
                           className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                            statusUI[booking.status].className
+                            statusUI[booking.statusLabel]?.className || "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {statusUI[booking.status].icon}
-                          {booking.status}
+                          {statusUI[booking.statusLabel]?.icon}
+                          {booking.statusLabel}
                         </span>
                       </div>
 
                       <p className="mt-3 text-slate-500 flex items-center gap-2">
                         <FaMapMarkerAlt />
-                        {booking.city}
+                        {booking.hotel?.city}, {booking.hotel?.country}
                       </p>
 
                       <p className="mt-3 text-slate-700 font-medium">
-                        {booking.room}
+                        {booking.room?.name}
                       </p>
                     </div>
 
@@ -135,11 +116,11 @@ function MyBookings() {
                       <p className="text-sm text-slate-500">Booking ID</p>
 
                       <p className="text-lg font-bold text-slate-900">
-                        {booking.id}
+                        {booking.bookingNumber}
                       </p>
 
                       <p className="mt-3 text-3xl font-bold text-slate-900">
-                        ${booking.total}
+                        ${booking.totalAmount}
                       </p>
                     </div>
                   </div>
@@ -151,7 +132,7 @@ function MyBookings() {
 
                       <p className="font-semibold flex items-center gap-2">
                         <FaCalendarAlt />
-                        {booking.checkIn}
+                        {booking.checkInDate}
                       </p>
                     </div>
 
@@ -160,7 +141,7 @@ function MyBookings() {
 
                       <p className="font-semibold flex items-center gap-2">
                         <FaCalendarAlt />
-                        {booking.checkOut}
+                        {booking.checkOutDate}
                       </p>
                     </div>
 
@@ -169,7 +150,7 @@ function MyBookings() {
 
                       <p className="font-semibold flex items-center gap-2">
                         <FaUserFriends />
-                        {booking.guests} Guests
+                        {booking.numberOfGuests} Guests
                       </p>
                     </div>
                   </div>
@@ -183,8 +164,14 @@ function MyBookings() {
                       View Details
                     </Link>
 
-                    {booking.status === "Confirmed" && (
-                      <button className="px-5 py-3 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition">
+                    {booking.status === "confirmed" && (
+                      <button
+                        onClick={async () => {
+                          await cancelBooking(booking.id);
+                          loadBookings();
+                        }}
+                        className="px-5 py-3 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition"
+                      >
                         Cancel Booking
                       </button>
                     )}

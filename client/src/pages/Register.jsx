@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
 import {
   FaUser,
   FaEnvelope,
@@ -12,9 +13,13 @@ import {
 
 function Register() {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -31,23 +36,58 @@ function Register() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setErrorMsg("");
+    setSuccessMsg("");
+
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      setErrorMsg("Passwords do not match");
       return;
     }
 
-    // Demo registration
-    navigate("/login");
+    if (formData.password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await register({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
+      });
+      setSuccessMsg("Registration successful");
+
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: ""
+      });
+
+      setTimeout(() => {
+        navigate("/profile");
+      }, 700);
+
+    } catch (error) {
+      setErrorMsg(error || "Registration Failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <section className="min-h-screen bg-slate-50 flex items-center py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 bg-white rounded-3xl shadow-xl overflow-hidden">
-          {/* Left Side */}
+
+          {/* LEFT SIDE */}
           <div className="hidden lg:flex flex-col justify-center bg-slate-900 text-white p-12 relative">
             <div className="relative z-10">
               <div className="w-16 h-16 rounded-2xl bg-yellow-500 text-slate-900 flex items-center justify-center text-2xl mb-6">
@@ -63,15 +103,16 @@ function Register() {
               </h1>
 
               <p className="mt-6 text-slate-300 leading-8">
-                Register now to book luxury stays, manage reservations, and
-                receive exclusive hotel offers worldwide.
+                Register now to book luxury stays,
+                manage reservations, and receive
+                exclusive hotel offers worldwide.
               </p>
             </div>
 
             <div className="absolute inset-0 bg-linear-to-br from-slate-900 via-slate-800 to-slate-950" />
           </div>
 
-          {/* Right Side */}
+          {/* RIGHT SIDE */}
           <div className="p-8 md:p-12">
             <p className="text-yellow-500 font-semibold uppercase tracking-widest">
               New Account
@@ -85,8 +126,23 @@ function Register() {
               Fill your details to create account.
             </p>
 
+            {/* ERROR */}
+            {errorMsg && (
+              <div className="mt-5 bg-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* SUCCESS */}
+            {successMsg && (
+              <div className="mt-5 bg-green-100 text-green-700 px-4 py-3 rounded-xl text-sm">
+                {successMsg}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {/* Full Name */}
+
+              {/* FULL NAME */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Full Name
@@ -107,7 +163,7 @@ function Register() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* EMAIL */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Email Address
@@ -128,7 +184,7 @@ function Register() {
                 </div>
               </div>
 
-              {/* Phone */}
+              {/* PHONE */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Phone Number
@@ -140,7 +196,6 @@ function Register() {
                   <input
                     type="tel"
                     name="phone"
-                    required
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 9876543210"
@@ -149,7 +204,7 @@ function Register() {
                 </div>
               </div>
 
-              {/* Password */}
+              {/* PASSWORD */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Password
@@ -178,7 +233,7 @@ function Register() {
                 </div>
               </div>
 
-              {/* Confirm Password */}
+              {/* CONFIRM PASSWORD */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Confirm Password
@@ -207,11 +262,13 @@ function Register() {
                 </div>
               </div>
 
+              {/* BUTTON */}
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition disabled:opacity-60"
               >
-                Create Account
+                {loading ? "Creating Account..." : "Create Account"}
               </button>
             </form>
 
@@ -225,6 +282,7 @@ function Register() {
               </Link>
             </p>
           </div>
+
         </div>
       </div>
     </section>

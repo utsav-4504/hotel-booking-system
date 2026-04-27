@@ -21,6 +21,8 @@ function Navbar() {
     navigate("/");
   };
 
+  const firstName = user?.name?.split(" ")[0] || "User";
+
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,7 +60,9 @@ function Navbar() {
                   className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-slate-100 transition"
                 >
                   <FaUserCircle className="text-2xl text-slate-900" />
-                  <span className="font-medium text-slate-900 text-sm">{user.name.split(" ")[0]}</span>
+                  <span className="font-medium text-slate-900 text-sm">
+                    {firstName}
+                  </span>
                 </button>
 
                 {profileOpen && (
@@ -77,6 +81,15 @@ function Navbar() {
                     >
                       My Bookings
                     </Link>
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={() => setProfileOpen(false)}
+                        className="block px-4 py-3 hover:bg-slate-50 text-slate-700 text-sm"
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-3 hover:bg-slate-50 text-red-600 text-sm flex items-center gap-2"

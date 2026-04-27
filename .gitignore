@@ -1,0 +1,8 @@
+server/node_modules/
+server/.env
+npm-debug.log*
+.backend-log/
+.postgres-data/
+.postgres-log/
+client/node_modules/
+client/dist/

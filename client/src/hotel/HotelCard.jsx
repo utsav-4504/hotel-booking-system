@@ -21,7 +21,11 @@ function HotelCard({ hotel }) {
   } = hotel;
 
   return (
-    <div className="group bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100 hover:-translate-y-2 transition duration-300">
+    <div
+      data-gsap-card
+      data-gsap-reveal
+      className="group bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100 hover:-translate-y-2 transition duration-300 will-change-transform"
+    >
       {/* Image */}
       <div className="relative overflow-hidden">
         <img

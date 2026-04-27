@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   FaMapMarkerAlt,
   FaStar,
@@ -7,74 +7,40 @@ import {
   FaSwimmingPool,
   FaParking
 } from "react-icons/fa";
+import { getHotels } from "../services/hotelService";
 
 function Hotels() {
-  const allHotels = [
-    {
-      id: 1,
-      name: "Ocean Pearl Resort",
-      city: "Goa",
-      price: 180,
-      rating: 4.9,
-      image:
-        "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200",
-      amenities: ["wifi", "pool", "parking"]
-    },
-    {
-      id: 2,
-      name: "Skyline Grand Hotel",
-      city: "Dubai",
-      price: 240,
-      rating: 4.8,
-      image:
-        "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1200",
-      amenities: ["wifi", "pool"]
-    },
-    {
-      id: 3,
-      name: "Royal Palace Stay",
-      city: "Udaipur",
-      price: 150,
-      rating: 4.7,
-      image:
-        "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200",
-      amenities: ["wifi", "parking"]
-    },
-    {
-      id: 4,
-      name: "Urban Luxe Suites",
-      city: "Mumbai",
-      price: 130,
-      rating: 4.5,
-      image:
-        "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=1200",
-      amenities: ["wifi"]
-    },
-    {
-      id: 5,
-      name: "Mountain Crown Retreat",
-      city: "Manali",
-      price: 165,
-      rating: 4.6,
-      image:
-        "https://images.unsplash.com/photo-1455587734955-081b22074882?w=1200",
-      amenities: ["wifi", "parking"]
-    },
-    {
-      id: 6,
-      name: "Sunset Marina Hotel",
-      city: "Bali",
-      price: 210,
-      rating: 4.9,
-      image:
-        "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200",
-      amenities: ["wifi", "pool", "parking"]
-    }
-  ];
-
+  const [searchParams] = useSearchParams();
+  const [allHotels, setAllHotels] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
   const [search, setSearch] = useState("");
   const [maxPrice, setMaxPrice] = useState(300);
   const [minRating, setMinRating] = useState(0);
+
+  useEffect(() => {
+    const destination = searchParams.get("destination") || "";
+    if (destination) {
+      setSearch(destination);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const loadHotels = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMsg("");
+        const response = await getHotels({ limit: 100 });
+        setAllHotels(response.hotels || []);
+      } catch (error) {
+        setErrorMsg(error || "Failed to fetch hotels");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadHotels();
+  }, []);
 
   const filteredHotels = useMemo(() => {
     return allHotels.filter((hotel) => {
@@ -82,18 +48,18 @@ function Hotels() {
         hotel.name.toLowerCase().includes(search.toLowerCase()) ||
         hotel.city.toLowerCase().includes(search.toLowerCase());
 
-      const matchPrice = hotel.price <= maxPrice;
+      const matchPrice = Number(hotel.price || 0) <= maxPrice;
       const matchRating = hotel.rating >= minRating;
 
       return matchSearch && matchPrice && matchRating;
     });
-  }, [search, maxPrice, minRating]);
+  }, [allHotels, search, maxPrice, minRating]);
 
   return (
     <section className="py-16 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="mb-10">
+        <div className="mb-10" data-gsap-reveal>
           <p className="text-yellow-500 font-semibold uppercase tracking-widest">
             Hotel Collection
           </p>
@@ -111,7 +77,7 @@ function Hotels() {
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}
           <aside className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24" data-gsap-reveal>
               <h3 className="text-xl font-semibold mb-6">Filters</h3>
 
               {/* Search */}
@@ -173,12 +139,25 @@ function Hotels() {
                 {filteredHotels.length} Hotels Found
               </p>
             </div>
+            {errorMsg && (
+              <div className="bg-red-100 text-red-700 px-4 py-3 rounded-xl mb-6">
+                {errorMsg}
+              </div>
+            )}
+            {isLoading && (
+              <div className="bg-white rounded-2xl p-10 text-center shadow-lg">
+                <p className="text-slate-700">Loading hotels...</p>
+              </div>
+            )}
 
-            <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-7">
+            {!isLoading && (
+              <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-7">
               {filteredHotels.map((hotel) => (
                 <div
                   key={hotel.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:-translate-y-1 transition duration-300"
+                  data-gsap-card
+                  data-gsap-reveal
+                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:-translate-y-1 transition duration-300 will-change-transform"
                 >
                   <img
                     src={hotel.image}
@@ -207,9 +186,9 @@ function Hotels() {
 
                     {/* Amenities */}
                     <div className="flex gap-4 text-slate-500 mt-5">
-                      {hotel.amenities.includes("wifi") && <FaWifi />}
-                      {hotel.amenities.includes("pool") && <FaSwimmingPool />}
-                      {hotel.amenities.includes("parking") && <FaParking />}
+                      {hotel.amenities.some((item) => item.toLowerCase().includes("wifi")) && <FaWifi />}
+                      {hotel.amenities.some((item) => item.toLowerCase().includes("pool")) && <FaSwimmingPool />}
+                      {hotel.amenities.some((item) => item.toLowerCase().includes("parking")) && <FaParking />}
                     </div>
 
                     {/* Price */}
@@ -231,10 +210,11 @@ function Hotels() {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
 
             {/* Empty State */}
-            {filteredHotels.length === 0 && (
+            {!isLoading && filteredHotels.length === 0 && (
               <div className="bg-white rounded-2xl p-10 text-center shadow-lg">
                 <h3 className="text-2xl font-semibold text-slate-900">
                   No Hotels Found

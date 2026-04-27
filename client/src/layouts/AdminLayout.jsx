@@ -9,9 +9,11 @@ import {
   FaTimes,
   FaSignOutAlt
 } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const menuItems = [
     {
@@ -87,7 +89,10 @@ function AdminLayout() {
 
         {/* Bottom */}
         <div className="mt-10 pt-8 border-t border-white/10">
-          <button className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-white/10 hover:bg-white/10 transition">
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-white/10 hover:bg-white/10 transition"
+          >
             <FaSignOutAlt />
             Logout
           </button>
@@ -118,7 +123,7 @@ function AdminLayout() {
           </h1>
 
           <div className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold">
-            A
+            {user?.name?.charAt(0) || "A"}
           </div>
         </header>
 

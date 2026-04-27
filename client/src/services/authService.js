@@ -1,13 +1,26 @@
 import api from "./api";
+import { normalizeUser } from "../utils/normalizers";
 
 /* Login User */
 async function loginUser(payload) {
-  return await api.post("/auth/login", payload);
+  const response = await api.post("/auth/login", payload);
+
+  return {
+    ...response,
+    user: normalizeUser(response.data?.user),
+    token: response.data?.token
+  };
 }
 
 /* Register User */
 async function registerUser(payload) {
-  return await api.post("/auth/register", payload);
+  const response = await api.post("/auth/register", payload);
+
+  return {
+    ...response,
+    user: normalizeUser(response.data?.user),
+    token: response.data?.token
+  };
 }
 
 /* Logout User */
@@ -19,12 +32,22 @@ async function logoutUser() {
 
 /* Get Current User */
 async function getProfile() {
-  return await api.get("/auth/profile");
+  const response = await api.get("/auth/profile");
+
+  return {
+    ...response,
+    user: normalizeUser(response.data)
+  };
 }
 
 /* Update Profile */
 async function updateProfile(payload) {
-  return await api.put("/auth/profile", payload);
+  const response = await api.put("/auth/profile", payload);
+
+  return {
+    ...response,
+    user: normalizeUser(response.data)
+  };
 }
 
 /* Change Password */

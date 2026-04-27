@@ -1,25 +1,22 @@
-// Request Logger Middleware
 const requestLogger = (req, res, next) => {
   const startTime = Date.now();
 
-  // Log response when it finishes
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - startTime;
-    const log = {
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      duration: `${duration}ms`,
-      timestamp: new Date().toISOString()
-    };
+    const logLine = [
+      `[${new Date().toISOString()}]`,
+      req.method,
+      req.originalUrl,
+      res.statusCode,
+      `${duration}ms`
+    ].join(" ");
 
-    // Log in different colors based on status
-    if (res.statusCode >= 400) {
-      console.error('❌', JSON.stringify(log));
-    } else if (res.statusCode >= 300) {
-      console.warn('⚠️ ', JSON.stringify(log));
+    if (res.statusCode >= 500) {
+      console.error(logLine);
+    } else if (res.statusCode >= 400) {
+      console.warn(logLine);
     } else {
-      console.log('✓ ', JSON.stringify(log));
+      console.log(logLine);
     }
   });
 

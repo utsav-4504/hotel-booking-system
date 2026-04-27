@@ -1,47 +1,48 @@
-// Error Handler Middleware
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err);
+  let statusCode = err.status || 500;
+  let message = err.message || "Internal Server Error";
 
-  // Default error
-  let status = err.status || 500;
-  let message = err.message || 'Internal Server Error';
-  let details = process.env.NODE_ENV === 'development' ? err.stack : undefined;
-
-  // JWT Errors
-  if (err.name === 'JsonWebTokenError') {
-    status = 401;
-    message = 'Invalid token';
+  if (err.name === "JsonWebTokenError") {
+    statusCode = 401;
+    message = "Invalid token";
   }
 
-  if (err.name === 'TokenExpiredError') {
-    status = 401;
-    message = 'Token expired';
+  if (err.name === "TokenExpiredError") {
+    statusCode = 401;
+    message = "Token expired";
   }
 
-  // Validation Errors
-  if (err.status === 422) {
-    status = 422;
-    message = 'Validation error';
+  if (err.type === "entity.parse.failed") {
+    statusCode = 400;
+    message = "Invalid JSON payload";
   }
 
-  // Database Errors
-  if (err.code === '23505') {
-    status = 409;
-    message = 'Duplicate entry';
+  if (err.code === "23505") {
+    statusCode = 409;
+    message = "A record with that value already exists";
   }
 
-  if (err.code === '23503') {
-    status = 400;
-    message = 'Foreign key constraint violation';
+  if (err.code === "23503") {
+    statusCode = 400;
+    message = "Related record not found";
   }
 
-  res.status(status).json({
+  const response = {
     success: false,
-    status,
-    message,
-    ...(details && { details }),
-    timestamp: new Date().toISOString()
-  });
+    message
+  };
+
+  if (err.details) {
+    response.details = err.details;
+  } else if (process.env.NODE_ENV === "development") {
+    response.details = err.stack;
+  }
+
+  if (statusCode >= 500) {
+    console.error("[error]", err);
+  }
+
+  res.status(statusCode).json(response);
 };
 
 export default errorHandler;

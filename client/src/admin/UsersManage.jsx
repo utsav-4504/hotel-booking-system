@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FaSearch,
   FaUserCircle,
@@ -8,43 +8,25 @@ import {
   FaTrash,
   FaCheckCircle
 } from "react-icons/fa";
+import { deleteUser, getUsers, updateUser } from "../services/userService";
 
 function UsersManage() {
   const [search, setSearch] = useState("");
+  const [users, setUsers] = useState([]);
+  const loadUsers = async () => {
+    const response = await getUsers({ limit: 100 });
+    setUsers(response.users || []);
+  };
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  const users = [
-    {
-      id: "USR1001",
-      name: "Rahul Shah",
-      email: "rahul@gmail.com",
-      phone: "+91 9876543210",
-      role: "Customer",
-      status: "Active"
-    },
-    {
-      id: "USR1002",
-      name: "Priya Patel",
-      email: "priya@gmail.com",
-      phone: "+91 9988776655",
-      role: "Customer",
-      status: "Active"
-    },
-    {
-      id: "USR1003",
-      name: "Aman Verma",
-      email: "aman@gmail.com",
-      phone: "+91 9123456780",
-      role: "Admin",
-      status: "Active"
-    }
-  ];
-
-  const filteredUsers = users.filter(
+  const filteredUsers = useMemo(() => users.filter(
     (user) =>
       user.name.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase()) ||
       user.id.toLowerCase().includes(search.toLowerCase())
-  );
+  ), [users, search]);
 
   return (
     <section className="min-h-screen bg-slate-50 py-12">
@@ -135,7 +117,7 @@ function UsersManage() {
                     <td className="px-6 py-5">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          user.role === "Admin"
+                          user.role === "admin"
                             ? "bg-purple-100 text-purple-700"
                             : "bg-blue-100 text-blue-700"
                         }`}
@@ -146,7 +128,9 @@ function UsersManage() {
 
                     {/* Status */}
                     <td className="px-6 py-5">
-                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                        user.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                      }`}>
                         <FaCheckCircle />
                         {user.status}
                       </span>
@@ -155,11 +139,25 @@ function UsersManage() {
                     {/* Actions */}
                     <td className="px-6 py-5">
                       <div className="flex gap-3">
-                        <button className="w-10 h-10 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition flex items-center justify-center">
+                        <button
+                          onClick={async () => {
+                            await updateUser(user.id, {
+                              role: user.role === "customer" ? "staff" : "customer"
+                            });
+                            loadUsers();
+                          }}
+                          className="w-10 h-10 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition flex items-center justify-center"
+                        >
                           <FaEdit />
                         </button>
 
-                        <button className="w-10 h-10 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition flex items-center justify-center">
+                        <button
+                          onClick={async () => {
+                            await deleteUser(user.id);
+                            loadUsers();
+                          }}
+                          className="w-10 h-10 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 transition flex items-center justify-center"
+                        >
                           <FaTrash />
                         </button>
                       </div>

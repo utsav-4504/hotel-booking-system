@@ -1,23 +1,46 @@
 import api from "./api";
+import { normalizeBooking } from "../utils/normalizers";
 
 /* Create Booking */
 async function createBooking(payload) {
-  return await api.post("/bookings", payload);
+  const response = await api.post("/bookings", payload);
+
+  return {
+    ...response,
+    booking: normalizeBooking(response.data)
+  };
 }
 
 /* Get User Bookings */
 async function getMyBookings() {
-  return await api.get("/bookings/my-bookings");
+  const response = await api.get("/bookings/my-bookings");
+
+  return {
+    ...response,
+    bookings: Array.isArray(response.data)
+      ? response.data.map(normalizeBooking)
+      : []
+  };
 }
 
 /* Get Booking By ID */
 async function getBookingById(id) {
-  return await api.get(`/bookings/${id}`);
+  const response = await api.get(`/bookings/${id}`);
+
+  return {
+    ...response,
+    booking: normalizeBooking(response.data)
+  };
 }
 
 /* Cancel Booking */
 async function cancelBooking(id) {
-  return await api.patch(`/bookings/${id}/cancel`);
+  const response = await api.patch(`/bookings/${id}/cancel`);
+
+  return {
+    ...response,
+    booking: normalizeBooking(response.data)
+  };
 }
 
 /* Delete Booking */
@@ -27,12 +50,24 @@ async function deleteBooking(id) {
 
 /* Admin: Get All Bookings */
 async function getAllBookings(params = {}) {
-  return await api.get("/bookings", { params });
+  const response = await api.get("/bookings", { params });
+
+  return {
+    ...response,
+    bookings: Array.isArray(response.data)
+      ? response.data.map(normalizeBooking)
+      : []
+  };
 }
 
 /* Admin: Update Booking Status */
 async function updateBookingStatus(id, payload) {
-  return await api.patch(`/bookings/${id}/status`, payload);
+  const response = await api.patch(`/bookings/${id}/status`, payload);
+
+  return {
+    ...response,
+    booking: normalizeBooking(response.data)
+  };
 }
 
 export {

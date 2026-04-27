@@ -7,6 +7,7 @@ import {
   FaWallet,
   FaCheckCircle
 } from "react-icons/fa";
+import { createPayment, verifyPayment } from "../services/paymentService";
 
 function Checkout() {
   const navigate = useNavigate();
@@ -35,14 +36,30 @@ function Checkout() {
 
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [processing, setProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handlePayment = () => {
-    setProcessing(true);
-
-    setTimeout(() => {
+  const handlePayment = async () => {
+    if (!bookingData.booking?.id) {
+      setErrorMsg("Booking details are missing. Please create booking first.");
+      return;
+    }
+    try {
+      setProcessing(true);
+      setErrorMsg("");
+      const createdPayment = await createPayment({
+        bookingId: bookingData.booking.id,
+        paymentMethod
+      });
+      await verifyPayment({
+        paymentId: createdPayment.payment?.id,
+        status: "completed"
+      });
       setProcessing(false);
       navigate("/my-bookings");
-    }, 1800);
+    } catch (error) {
+      setProcessing(false);
+      setErrorMsg(error || "Payment failed");
+    }
   };
 
   return (
@@ -64,6 +81,11 @@ function Checkout() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-10">
+          {errorMsg && (
+            <div className="lg:col-span-3 bg-red-100 text-red-700 px-4 py-3 rounded-xl">
+              {errorMsg}
+            </div>
+          )}
           {/* Payment Form */}
           <div className="lg:col-span-2 bg-white rounded-3xl shadow-lg p-8">
             <div className="flex items-center gap-3 mb-8">

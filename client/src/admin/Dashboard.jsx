@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaHotel,
   FaUsers,
@@ -7,64 +7,30 @@ import {
   FaArrowUp,
   FaStar
 } from "react-icons/fa";
+import { getDashboardOverview } from "../services/adminService";
 
 function Dashboard() {
-  const stats = [
-    {
-      title: "Total Hotels",
-      value: "128",
-      icon: <FaHotel />,
-      color: "bg-blue-100 text-blue-600"
-    },
-    {
-      title: "Users",
-      value: "8,540",
-      icon: <FaUsers />,
-      color: "bg-purple-100 text-purple-600"
-    },
-    {
-      title: "Bookings",
-      value: "1,274",
-      icon: <FaCalendarCheck />,
-      color: "bg-green-100 text-green-600"
-    },
-    {
-      title: "Revenue",
-      value: "$48,920",
-      icon: <FaDollarSign />,
-      color: "bg-yellow-100 text-yellow-700"
-    }
-  ];
+  const [stats, setStats] = useState([]);
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [topHotels, setTopHotels] = useState([]);
 
-  const recentBookings = [
-    {
-      id: "#BK1204",
-      user: "Rahul Shah",
-      hotel: "Ocean Pearl Resort",
-      amount: "$388",
-      status: "Confirmed"
-    },
-    {
-      id: "#BK1205",
-      user: "Priya Patel",
-      hotel: "Skyline Grand Hotel",
-      amount: "$620",
-      status: "Pending"
-    },
-    {
-      id: "#BK1206",
-      user: "Aman Verma",
-      hotel: "Royal Palace Stay",
-      amount: "$210",
-      status: "Cancelled"
-    }
-  ];
-
-  const topHotels = [
-    { name: "Ocean Pearl Resort", rating: 4.9 },
-    { name: "Skyline Grand Hotel", rating: 4.8 },
-    { name: "Royal Palace Stay", rating: 4.7 }
-  ];
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await getDashboardOverview();
+        const rawStats = response.overview?.stats || {};
+        setStats([
+          { title: "Total Hotels", value: String(rawStats.totalHotels || 0), icon: <FaHotel />, color: "bg-blue-100 text-blue-600" },
+          { title: "Users", value: String(rawStats.totalUsers || 0), icon: <FaUsers />, color: "bg-purple-100 text-purple-600" },
+          { title: "Bookings", value: String(rawStats.totalBookings || 0), icon: <FaCalendarCheck />, color: "bg-green-100 text-green-600" },
+          { title: "Revenue", value: `$${rawStats.totalRevenue || 0}`, icon: <FaDollarSign />, color: "bg-yellow-100 text-yellow-700" }
+        ]);
+        setRecentBookings(response.overview?.recentBookings || []);
+        setTopHotels(response.overview?.topHotels || []);
+      } catch (error) {}
+    };
+    loadDashboard();
+  }, []);
 
   const statusColor = {
     Confirmed: "bg-green-100 text-green-700",
@@ -154,24 +120,24 @@ function Dashboard() {
                       className="border-b border-slate-100"
                     >
                       <td className="py-4 font-medium text-slate-900">
-                        {item.id}
+                        {item.booking_number}
                       </td>
 
                       <td className="py-4 text-slate-600">
-                        {item.user}
+                        {item.user_name}
                       </td>
 
                       <td className="py-4 text-slate-600">
-                        {item.hotel}
+                        {item.hotel_name}
                       </td>
 
                       <td className="py-4 font-semibold text-slate-900">
-                        {item.amount}
+                        ${item.total_amount}
                       </td>
 
                       <td className="py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${statusColor[item.status]}`}
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${statusColor[item.status === "confirmed" ? "Confirmed" : item.status === "pending" ? "Pending" : "Cancelled"]}`}
                         >
                           {item.status}
                         </span>

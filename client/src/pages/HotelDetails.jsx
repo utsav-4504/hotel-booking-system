@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   FaStar,
@@ -10,58 +10,39 @@ import {
   FaSnowflake,
   FaDumbbell
 } from "react-icons/fa";
+import { getHotelById } from "../services/hotelService";
 
 function HotelDetails() {
   const { id } = useParams();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [hotel, setHotel] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const hotel = {
-    id,
-    name: "Ocean Pearl Resort",
-    city: "Goa, India",
-    rating: 4.9,
-    reviews: 1284,
-    price: 180,
-    description:
-      "Experience world-class luxury with ocean views, elegant rooms, premium dining, private beach access and exceptional hospitality.",
-    images: [
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1400",
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1400",
-      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1400",
-      "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=1400"
-    ],
-    amenities: [
-      "Free WiFi",
-      "Swimming Pool",
-      "Parking",
-      "Restaurant",
-      "Air Conditioning",
-      "Fitness Center"
-    ],
-    rooms: [
-      {
-        id: 1,
-        name: "Deluxe Room",
-        guests: 2,
-        beds: "1 King Bed",
-        price: 180
-      },
-      {
-        id: 2,
-        name: "Executive Suite",
-        guests: 3,
-        beds: "1 King + Sofa",
-        price: 260
-      },
-      {
-        id: 3,
-        name: "Presidential Suite",
-        guests: 4,
-        beds: "2 King Beds",
-        price: 420
+  useEffect(() => {
+    const loadHotel = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMsg("");
+        const response = await getHotelById(id);
+        setHotel(response.hotel);
+      } catch (error) {
+        setErrorMsg(error || "Failed to fetch hotel details");
+      } finally {
+        setIsLoading(false);
       }
-    ]
-  };
+    };
+
+    loadHotel();
+  }, [id]);
+
+  const hotelImages = useMemo(() => {
+    if (!hotel) return [];
+    if (Array.isArray(hotel.gallery) && hotel.gallery.length) {
+      return hotel.gallery.map((item) => item.imageUrl).filter(Boolean);
+    }
+    return hotel.image ? [hotel.image] : [];
+  }, [hotel]);
 
   const amenityIcons = {
     "Free WiFi": <FaWifi />,
@@ -71,6 +52,14 @@ function HotelDetails() {
     "Air Conditioning": <FaSnowflake />,
     "Fitness Center": <FaDumbbell />
   };
+
+  if (isLoading) {
+    return <div className="py-20 text-center">Loading hotel...</div>;
+  }
+
+  if (errorMsg || !hotel) {
+    return <div className="py-20 text-center text-red-600">{errorMsg || "Hotel not found"}</div>;
+  }
 
   return (
     <section className="bg-slate-50 min-h-screen py-14">
@@ -88,7 +77,7 @@ function HotelDetails() {
           <div className="mt-4 flex flex-wrap items-center gap-5 text-slate-600">
             <span className="flex items-center gap-2">
               <FaMapMarkerAlt />
-              {hotel.city}
+              {hotel.city}, {hotel.country}
             </span>
 
             <span className="flex items-center gap-2 text-yellow-500 font-medium">
@@ -96,7 +85,7 @@ function HotelDetails() {
               {hotel.rating}
             </span>
 
-            <span>{hotel.reviews} Reviews</span>
+            <span>{hotel.reviewsCount} Reviews</span>
           </div>
         </div>
 
@@ -104,14 +93,14 @@ function HotelDetails() {
         <div className="grid lg:grid-cols-3 gap-6 mb-12">
           <div className="lg:col-span-2">
             <img
-              src={hotel.images[selectedImage]}
+              src={hotelImages[selectedImage] || hotel.image}
               alt={hotel.name}
               className="w-full h-112.5 object-cover rounded-3xl shadow-lg"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {hotel.images.map((img, index) => (
+            {hotelImages.map((img, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
@@ -184,13 +173,13 @@ function HotelDetails() {
                       <h3 className="text-xl font-semibold">{room.name}</h3>
 
                       <p className="text-slate-500 mt-2">
-                        {room.guests} Guests • {room.beds}
+                        {room.maxGuests} Guests • {room.beds}
                       </p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                       <p className="text-2xl font-bold text-slate-900">
-                        ${room.price}
+                        ${room.pricePerNight}
                         <span className="text-sm text-slate-500 font-normal">
                           /night
                         </span>
@@ -198,6 +187,7 @@ function HotelDetails() {
 
                       <Link
                         to={`/booking/${room.id}`}
+                        state={{ room, hotel }}
                         className="px-6 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition"
                       >
                         Book Now
@@ -215,7 +205,7 @@ function HotelDetails() {
               <p className="text-slate-500 mb-2">Starting From</p>
 
               <h3 className="text-4xl font-bold text-slate-900">
-                ${hotel.price}
+                ${hotel.startingPrice}
                 <span className="text-base font-normal text-slate-500">
                   /night
                 </span>
