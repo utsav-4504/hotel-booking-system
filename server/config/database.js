@@ -24,8 +24,25 @@ if (process.env.DATABASE_URL) {
   });
 }
 
-// ✅ ADD THIS
+// ✅ query function
 const query = (text, params) => pool.query(text, params);
 
-export { query };
+// ✅ withTransaction function
+const withTransaction = async (callback) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    const result = await callback(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export { query, withTransaction };
 export default pool;
