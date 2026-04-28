@@ -1,4 +1,4 @@
-    import dotenv from "dotenv";
+import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -6,18 +6,22 @@ import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
 import { query } from "./config/database.js";
+
 import authRoutes from "./routes/authRoutes.js";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+
 import errorHandler from "./middleware/errorHandler.js";
 import requestLogger from "./middleware/requestLogger.js";
 
 dotenv.config();
 
 const app = express();
+
+// ✅ CORS setup
 const parseAllowedOrigins = () => {
   const configuredOrigins = (
     process.env.CLIENT_URLS ||
@@ -29,9 +33,9 @@ const parseAllowedOrigins = () => {
     .filter(Boolean);
 
   const defaults = ["http://localhost:5173", "http://localhost:5433"];
-  const origins = [...new Set([...configuredOrigins, ...defaults])];
-  return origins;
+  return [...new Set([...configuredOrigins, ...defaults])];
 };
+
 const allowedOrigins = parseAllowedOrigins();
 
 app.use(helmet());
@@ -45,9 +49,9 @@ app.use(
       callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
-    optionsSuccessStatus: 200
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -55,16 +59,18 @@ app.use(
 );
 app.use(requestLogger);
 
+// ✅ Root route
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "StayLux API is running"
+    message: "StayLux API is running",
   });
 });
 
+// ✅ Health route (FIXED)
 app.get("/api/health", async (req, res, next) => {
   try {
-    const dbStatus = await testConnection();
+    const dbStatus = await query("SELECT NOW()");
 
     res.json({
       success: true,
@@ -72,14 +78,15 @@ app.get("/api/health", async (req, res, next) => {
       data: {
         status: "OK",
         timestamp: new Date().toISOString(),
-        databaseTime: dbStatus.now
-      }
+        databaseTime: dbStatus.rows[0].now,
+      },
     });
   } catch (error) {
     next(error);
   }
 });
 
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/hotels", hotelRoutes);
 app.use("/api/bookings", bookingRoutes);
@@ -87,60 +94,36 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 
+// ✅ 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found",
-    path: req.originalUrl
+    path: req.originalUrl,
   });
 });
 
+// ✅ Error handler
 app.use(errorHandler);
 
+// ✅ Server config
 const PORT = Number(process.env.PORT) || 5000;
-const HOST = process.env.HOST || "localhost";
-const MAX_PORT_RETRIES = 10;
+const HOST = process.env.HOST || "0.0.0.0"; // IMPORTANT for Railway
+
 const currentFilePath = fileURLToPath(import.meta.url);
 const isDirectRun =
   process.argv[1] &&
   path.resolve(process.argv[1]) === currentFilePath;
 
+// ✅ Start server
 const startServer = async () => {
   try {
+    // DB connection check
+    await query("SELECT 1");
 
-    await testConnection();
-    const startListening = (port, retriesRemaining) =>
-      new Promise((resolve, reject) => {
-        const server = app.listen(port, HOST, () => {
-          console.log(`[server] listening on http://${HOST}:${port}`);
-          console.log(
-            `[server] environment: ${process.env.NODE_ENV || "development"}`
-          );
-          console.log(
-            `[server] database: ${process.env.DB_NAME || "hotel_booking"}`
-          );
-          resolve(server);
-        });
-
-        server.on("error", (error) => {
-          if (error.code === "EADDRINUSE" && retriesRemaining > 0) {
-            const nextPort = port + 1;
-            console.warn(
-              `[server] port ${port} is in use, retrying on ${nextPort}`
-            );
-            setTimeout(() => {
-              startListening(nextPort, retriesRemaining - 1)
-                .then(resolve)
-                .catch(reject);
-            }, 100);
-            return;
-          }
-
-          reject(error);
-        });
-      });
-
-    const server = await startListening(PORT, MAX_PORT_RETRIES);
+    const server = app.listen(PORT, HOST, () => {
+      console.log(`[server] running on port ${PORT}`);
+    });
 
     return server;
   } catch (error) {
