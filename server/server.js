@@ -5,7 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
-import { ensureDatabaseInitialized, testConnection } from "./config/database.js";
+import { query } from "./config/database.js";
 import authRoutes from "./routes/authRoutes.js";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
