@@ -14,7 +14,7 @@ if (process.env.DATABASE_URL) {
     }
   });
 } else {
-  // 💻 Local development
+  // 💻 Local
   pool = new Pool({
     host: process.env.DB_HOST || "localhost",
     port: Number(process.env.DB_PORT) || 5432,
@@ -24,4 +24,8 @@ if (process.env.DATABASE_URL) {
   });
 }
 
+// ✅ ADD THIS
+const query = (text, params) => pool.query(text, params);
+
+export { query };
 export default pool;
