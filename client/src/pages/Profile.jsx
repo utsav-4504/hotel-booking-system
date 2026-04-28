@@ -4,30 +4,25 @@ import {
   FaEnvelope,
   FaPhone,
   FaMapMarkerAlt,
-  FaCalendarCheck,
-  FaEdit,
-  FaShieldAlt
+  FaEdit
 } from "react-icons/fa";
 import useAuth from "../hooks/useAuth";
 import { getMyBookings } from "../services/bookingService";
 
 function Profile() {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [profileForm, setProfileForm] = useState({
     fullName: "",
     email: "",
     phone: ""
   });
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
-  });
+  const [isEditing, setIsEditing] = useState(false);
   const [stats, setStats] = useState([
     { title: "Total Bookings", value: "0" },
     { title: "Upcoming Trips", value: "0" },
     { title: "Cancelled Trips", value: "0" }
   ]);
+  const [bookingList, setBookingList] = useState([]);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -45,6 +40,7 @@ function Profile() {
       try {
         const response = await getMyBookings();
         const bookings = response.bookings || [];
+        setBookingList(bookings);
         setStats([
           { title: "Total Bookings", value: String(bookings.length) },
           {
@@ -148,6 +144,7 @@ function Profile() {
                     type="text"
                     value={profileForm.fullName}
                     onChange={(e) => setProfileForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                    disabled={!isEditing}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                   />
                 </div>
@@ -174,6 +171,7 @@ function Profile() {
                     type="text"
                     value={profileForm.phone}
                     onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    disabled={!isEditing}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
                   />
                 </div>
@@ -184,62 +182,81 @@ function Profile() {
                 </div>
               </div>
 
-              <button
-                onClick={async () => {
-                  await updateProfile({ fullName: profileForm.fullName, phone: profileForm.phone });
-                  setMessage("Profile updated successfully");
-                }}
-                className="mt-6 px-6 py-3 rounded-xl bg-yellow-500 text-slate-900 font-semibold hover:bg-yellow-400 transition"
-              >
-                Save Changes
-              </button>
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsEditing(true);
+                    setMessage("");
+                  }}
+                  className="px-6 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition inline-flex items-center gap-2"
+                >
+                  <FaEdit />
+                  Edit Profile
+                </button>
+                <button
+                  onClick={async () => {
+                    await updateProfile({ fullName: profileForm.fullName, phone: profileForm.phone });
+                    setIsEditing(false);
+                    setMessage("Profile updated successfully");
+                  }}
+                  disabled={!isEditing}
+                  className="px-6 py-3 rounded-xl bg-yellow-500 text-slate-900 font-semibold hover:bg-yellow-400 transition disabled:opacity-60"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
 
-            {/* Security */}
+            {/* Booking List */}
             <div className="bg-white rounded-3xl shadow-lg p-8">
-              <div className="flex items-center gap-3 mb-5">
-                <FaShieldAlt className="text-green-600" />
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                My Booking List
+              </h3>
 
-                <h3 className="text-2xl font-bold text-slate-900">
-                  Security Settings
-                </h3>
-              </div>
+              {bookingList.length === 0 ? (
+                <p className="text-slate-500">No bookings available yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {bookingList.slice(0, 6).map((booking) => {
+                    const statusClass =
+                      booking.status === "cancelled"
+                        ? "bg-red-100 text-red-700"
+                        : booking.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-700";
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <input
-                  type="password"
-                  placeholder="New Password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
-                />
+                    return (
+                      <div
+                        key={booking.id}
+                        className="border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {booking.hotel?.name || "Hotel"}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {booking.checkInDate} to {booking.checkOutDate}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            Booking #{booking.bookingNumber}
+                          </p>
+                        </div>
 
-                <input
-                  type="password"
-                  placeholder="Current Password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none"
-                />
-              </div>
-
-              <button
-                onClick={async () => {
-                  await changePassword({
-                    currentPassword: passwordForm.currentPassword,
-                    newPassword: passwordForm.newPassword
-                  });
-                  setPasswordForm({
-                    currentPassword: "",
-                    newPassword: "",
-                    confirmPassword: ""
-                  });
-                  setMessage("Password updated successfully");
-                }}
-                className="mt-6 px-6 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition"
-              >
-                Update Password
-              </button>
+                        <div className="text-left md:text-right">
+                          <p className="font-bold text-slate-900">
+                            ${booking.totalAmount}
+                          </p>
+                          <span
+                            className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${statusClass}`}
+                          >
+                            {booking.statusLabel || booking.status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
