@@ -107,7 +107,7 @@ const isDirectRun =
 
 const startServer = async () => {
   try {
-    await ensureDatabaseInitialized();
+
     await testConnection();
     const startListening = (port, retriesRemaining) =>
       new Promise((resolve, reject) => {
