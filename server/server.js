@@ -25,16 +25,17 @@ const app = express();
    CORS CONFIG
 ================================= */
 const parseAllowedOrigins = () => {
+  const normalizeOrigin = (origin = "") => origin.trim().replace(/\/+$/, "");
   const configuredOrigins = (
     process.env.CLIENT_URLS ||
     process.env.CLIENT_URL ||
     ""
   )
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => normalizeOrigin(origin))
     .filter(Boolean);
 
-  const defaults = ["http://localhost:5173"];
+  const defaults = ["http://localhost:5173", "http://localhost:5433"];
   return [...new Set([...configuredOrigins, ...defaults])];
 };
 
@@ -45,10 +46,25 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      const isConfiguredOrigin = allowedOrigins.includes(normalizedOrigin);
+      let isVercelPreview = false;
+      try {
+        isVercelPreview = /\.vercel\.app$/.test(
+          new URL(normalizedOrigin).hostname
+        );
+      } catch {
+        isVercelPreview = false;
+      }
+
+      if (isConfiguredOrigin || isVercelPreview) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${normalizedOrigin}`));
     },
     credentials: true,
   })
