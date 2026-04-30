@@ -131,9 +131,9 @@ const startServer = async () => {
     // DB check
     await query("SELECT 1");
 
-    app.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-    });
+    app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+}););
   } catch (error) {
     console.error("❌ Server failed to start:", error);
     process.exit(1);
