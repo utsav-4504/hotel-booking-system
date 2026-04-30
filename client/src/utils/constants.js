@@ -1,6 +1,6 @@
 // API Configuration
 const PROD_API_FALLBACK =
-  "https://hotel-booking-system-production-f1d1.up.railway.app/api";
+  "https://hotel-booking-system-production-3a3c.up.railway.app/api";
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? PROD_API_FALLBACK : "http://localhost:5000/api");
