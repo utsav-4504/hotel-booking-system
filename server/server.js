@@ -119,7 +119,6 @@ app.use(errorHandler);
 ================================= */
 
 const PORT = process.env.PORT || 8080;
-const HOST = "0.0.0.0"; // ✅ VERY IMPORTANT (Railway)
 
 const currentFilePath = fileURLToPath(import.meta.url);
 const isDirectRun =
@@ -132,8 +131,9 @@ const startServer = async () => {
     await query("SELECT 1");
 
     app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-}););
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
   } catch (error) {
     console.error("❌ Server failed to start:", error);
     process.exit(1);
