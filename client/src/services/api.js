@@ -1,8 +1,13 @@
 import axios from "axios";
 
+const PROD_API_FALLBACK =
+  "https://hotel-booking-system-production-f1d1.up.railway.app/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PROD_API_FALLBACK : "http://localhost:5433/api");
+
 const api = axios.create({
-  // Point directly to your backend port 5433
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5433/api", 
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json"

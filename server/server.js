@@ -118,8 +118,10 @@ app.use(errorHandler);
    SERVER START
 ================================= */
 
-const PORT = process.env.PORT || 8080;
-
+const PORT = Number(process.env.PORT) || 8080;
+const HOST =
+  process.env.HOST ||
+  (process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost");
 const currentFilePath = fileURLToPath(import.meta.url);
 const isDirectRun =
   process.argv[1] &&
@@ -130,8 +132,8 @@ const startServer = async () => {
     // DB check
     await query("SELECT 1");
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     });
 
   } catch (error) {

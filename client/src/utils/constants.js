@@ -1,5 +1,9 @@
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const PROD_API_FALLBACK =
+  "https://hotel-booking-system-production-f1d1.up.railway.app/api";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PROD_API_FALLBACK : "http://localhost:5000/api");
 export const API_TIMEOUT = 10000;
 
 // App Configuration
